@@ -10,6 +10,14 @@ var app = express();
 
 app.use(bodyParser.json());
 
+app.get('/todos', function(req, resp){
+    Todo.find().then(function(docs){
+       resp.send({todos:docs});
+    }).catch(function(error){
+        resp.status(400).send(error);
+    })
+})
+
 app.post('/todos', function(req, res){
  console.log(req.body);
     var todo =  new Todo({
@@ -31,7 +39,9 @@ app.listen(8000, function(){
     console.log('new server listening on post 8000')
 })
 
-
+module.exports = {
+    app:app
+};
 
 
 
