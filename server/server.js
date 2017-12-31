@@ -6,6 +6,7 @@ var {mongoose} = require('./db/mongoose')
 
 var {Todo} = require('./models/todo');
 var {User} = require('./models/user');
+var {Navigation} = require('./models/navigation');
 
 var app = express();
 
@@ -54,6 +55,40 @@ app.post('/todos', function(req, res){
         res.status(404).send();
     })
 });
+
+
+//navigation api test
+app.get('/navigation', function(req, resp){
+    Navigation.find().then(function(navs){
+        if(!navs){
+         return resp.status(404).send();
+        }
+       resp.send({nav:navs});
+    }).catch(function(error){
+        resp.status(400).send(error);
+    });
+});
+
+app.post('/navigation', function(req, res){
+ console.log(req.body);
+    var navItem =  new Navigation({
+        name: req.body.name,
+        type: req.body.type,
+        link: req.body.link,
+        visable: req.body.visable
+        
+    });
+    console.log(navItem);
+    navItem.save().then(function(doc){
+//        console.log('new todo sucessfully saved');
+//        console.log(JSON.stringify(doc, null, 2));
+        res.send(doc);
+    }).catch(function(err){
+//console.log("error saving new Todo ", err);
+        res.status(404).send(err);
+    })
+});
+
 
 
 app.listen(port, function(){
