@@ -14,11 +14,14 @@ app.use(bodyParser.json());
 
 app.get('/todos', function(req, resp){
     Todo.find().then(function(docs){
+        if(!docs){
+         return resp.status(404).send();
+        }
        resp.send({todos:docs});
     }).catch(function(error){
         resp.status(400).send(error);
-    })
-})
+    });
+});
 
 app.get("/todos/:id", function(req, resp){
     var id = req.params.id;
