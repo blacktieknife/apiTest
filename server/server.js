@@ -1,6 +1,6 @@
 const express = require('express');
 var bodyParser = require('body-parser');
-
+var {ObjectID} = require('mongodb');
 var {mongoose} = require('./db/mongoose')
 
 var {Todo} = require('./models/todo');
@@ -10,6 +10,7 @@ var app = express();
 
 app.use(bodyParser.json());
 
+
 app.get('/todos', function(req, resp){
     Todo.find().then(function(docs){
        resp.send({todos:docs});
@@ -17,6 +18,22 @@ app.get('/todos', function(req, resp){
         resp.status(400).send(error);
     })
 })
+
+app.get("/todos/:id", function(req, resp){
+    var id = req.params.id;
+    if (!ObjectID.isValid(id)){
+        return resp.status(404).send();
+    }
+Todo.findById(id).then(function(todo){
+    if(!todo){
+        return resp.status(404).send();
+    }
+    resp.send({todo:todo});
+    
+}).catch(function(err){
+    resp.status(400).send();
+});
+});
 
 app.post('/todos', function(req, res){
  console.log(req.body);
@@ -30,7 +47,7 @@ app.post('/todos', function(req, res){
         res.send(doc);
     }).catch(function(err){
 //console.log("error saving new Todo ", err);
-        res.status(404).send(err);
+        res.status(404).send();
     })
 });
 
@@ -45,7 +62,14 @@ module.exports = {
 
 
 
+//find by id example
+//var id = "5a45ceaaf258f206b07ea0ed";
 
+//Todo.findById(id).then(function(todo){
+//    console.log(todo);
+//}).catch(function(err){
+//    console.log(err)
+//});
 
 
 
