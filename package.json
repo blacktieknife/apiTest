@@ -5,16 +5,16 @@
   "main": "index.js",
   "scripts": {
     "start": "node server/server.js"
-
   },
-   "engines":{
-        "node":"9.3.0"
-    },
+  "engines": {
+    "node": "9.3.0"
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.18.2",
     "express": "^4.16.2",
+    "lodash": "^4.17.4",
     "mongodb": "^3.0.1",
     "mongoose": "^4.13.8"
   },

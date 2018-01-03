@@ -1,8 +1,9 @@
-const port = process.env.PORT || 8000;
+const port = process.env.PORT || 3000;
+const _ = require('lodash');
 const express = require('express');
-var bodyParser = require('body-parser');
-var {ObjectID} = require('mongodb');
-var {mongoose} = require('./db/mongoose')
+const bodyParser = require('body-parser');
+const {ObjectID} = require('mongodb');
+const {mongoose} = require('./db/mongoose')
 
 var {Todo} = require('./models/todo');
 var {User} = require('./models/user');
@@ -12,7 +13,7 @@ var app = express();
 
 app.use(bodyParser.json());
 
-
+//get all todos
 app.get('/todos', function(req, resp){
     Todo.find().then(function(docs){
         if(!docs){
@@ -24,6 +25,7 @@ app.get('/todos', function(req, resp){
     });
 });
 
+//get todo by id
 app.get("/todos/:id", function(req, resp){
     var id = req.params.id;
     if (!ObjectID.isValid(id)){
@@ -40,6 +42,7 @@ Todo.findById(id).then(function(todo){
 });
 });
 
+//add new todo!
 app.post('/todos', function(req, res){
  console.log(req.body);
     var todo =  new Todo({
@@ -47,14 +50,59 @@ app.post('/todos', function(req, res){
     });
     
     todo.save().then(function(doc){
-//        console.log('new todo sucessfully saved');
-//        console.log(JSON.stringify(doc, null, 2));
+       res.send(doc);
+    }).catch(function(err){
+        res.status(404).send();
+    });
+});
+
+//remove todo by id
+app.delete('/todos/:id', function(req, res){
+ var id = req.params.id;
+    console.log(id);
+    
+    if(!ObjectID.isValid(id)) {
+        return res.status(404).send("ID not valid!");
+    }
+  Todo.findByIdAndRemove(id).then(function(doc){
+      if(!doc){
+          return res.status(404).send("No record found for delete --/todos/:id")
+      }
         res.send(doc);
     }).catch(function(err){
-//console.log("error saving new Todo ", err);
         res.status(404).send();
-    })
+    });
 });
+
+//update todo by id
+app.patch('/todos/:id', function(req,res){
+  var id = req.params.id;
+    var body = _.pick(req.body, ['text', 'completed']);
+    console.log(body);
+      if(!ObjectID.isValid(id)) {
+        return res.status(404).send("ID not valid!");
+    }
+    
+    if(body.completed && _.isBoolean(body.completed)) {
+        console.log("completed is filled and is a boolean");
+        body.completedAt = new Date().getTime();
+    } else {
+        body.completed = false;
+        body.completedAt = null;
+    }
+    
+    Todo.findByIdAndUpdate(id, body, {new:true}).then(function(doc){
+        if(!doc){
+            return res.status(404).send('No record found for update --/todos/:id');
+        }
+        
+        res.send({doc});
+    }).catch(function(err){
+        res.status(400).send();
+    });
+});
+
+
 
 
 //navigation api test
@@ -69,6 +117,7 @@ app.get('/navigation', function(req, resp){
     });
 });
 
+//add new navigation item
 app.post('/navigation', function(req, res){
  console.log(req.body);
     var navItem =  new Navigation({
@@ -80,16 +129,71 @@ app.post('/navigation', function(req, res){
     });
     console.log(navItem);
     navItem.save().then(function(doc){
-//        console.log('new todo sucessfully saved');
-//        console.log(JSON.stringify(doc, null, 2));
         res.send(doc);
     }).catch(function(err){
-//console.log("error saving new Todo ", err);
         res.status(404).send(err);
     })
 });
 
+//remove navigation item
+app.delete('/navigation/:id', function(req, res){
+ var id = req.params.id;
+    console.log(id);
+    
+    if(!ObjectID.isValid(id)) {
+        return res.status(404).send("ID not valid!");
+    }
+  Navigation.findByIdAndRemove(id).then(function(doc){
+      if(!doc){
+          return res.status(404).send("No record found to delete --/navigation/:id");
+      }
+        res.send(doc);
+    }).catch(function(err){
+        res.status(404).send();
+    });
+});
 
+//update navigation item
+app.post('/navigation/update', function(req, res){
+ console.log(req.body.id);
+    var id = req.body.id;
+    var navItem =  {
+        name: req.body.name,
+        type: req.body.type,
+        link: req.body.link,
+        visable: req.body.visable
+                };
+     if(!ObjectID.isValid(id)) {
+        return res.status(404).send("ID not valid!");
+    }
+    console.log(navItem);
+    Navigation.findOneAndUpdate({_id:id},navItem).then(function(doc){
+        if(!doc){
+            res.status(404).send("No record found for update --/navigation/update")
+        }
+        res.send(doc);
+    }).catch(function(err){
+        res.status(404).send(err);
+    })
+});
+
+//update navigation using patch
+app.patch("/navigation/:id", function(req, res){
+    var id = req.params.id;
+    var body = _.pick(req.body, ['name', 'type', 'link', 'visable']);
+    console.log(body);
+    if(!ObjectID.isValid(id)){
+        return res.status(404).send('Id is invalid');
+    }
+    Navigation.findOneAndUpdate({_id:id}, body).then(function(doc){
+        if(!doc){
+            return res.status(404).send('No record found for patch --/navigation/:id')
+        }
+        res.send(doc);
+    }).catch(function(err){
+       res.status(400).send(err);
+    });
+});
 
 app.listen(port, function(){
     console.log(`new server listening on post ${port}`)
@@ -99,67 +203,3 @@ module.exports = {
     app:app
 };
 
-
-
-//find by id example
-//var id = "5a45ceaaf258f206b07ea0ed";
-
-//Todo.findById(id).then(function(todo){
-//    console.log(todo);
-//}).catch(function(err){
-//    console.log(err)
-//});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//Todo example
-
-
-
-
-
-//text - required - trimmed -minlength 1
-
-//var otherTodo = new Todo({
-//    text:"Fix false not showing up by default in completed field",
-//    completed:true,
-//    completedAt:new Date().getTime()
-//})
-//
-//otherTodo.save().then(function(doc){
-//   console.log("Full Todo Saved ", doc);
-//}, function(err){
-//    console.log("there was an error... ", err)
-//});
-
-//User Model
-//email -reuired - trimed - set type - set min legnth of 1
-// var newUser = new User({
-//
-// });
-// newUser.save().then(function(doc){
-//    console.log("New User Saved ", doc);
-//}).catch(function(err){
-//     console.log("error with save --newUser --")
-//     console.log("----");
-//     console.log(err.message);
-//     console.log("----");
-//     console.log("Full error dump");
-//     console.log(JSON.stringify(err,null,2));
-// })
