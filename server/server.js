@@ -84,7 +84,6 @@ app.patch('/todos/:id', function(req,res){
     }
     
     if(body.completed && _.isBoolean(body.completed)) {
-        console.log("completed is filled and is a boolean");
         body.completedAt = new Date().getTime();
     } else {
         body.completed = false;
@@ -103,6 +102,28 @@ app.patch('/todos/:id', function(req,res){
 });
 
 
+app.post('/users', function(req,res){
+    var body = _.pick(req.body, ['email', 'password']);
+    var user = new User(body);
+
+    user.save().then(function(user){
+        
+        return user.generateAuthToken();
+  }).then(function(token){
+        res.header('x-auth', token).send(user);
+    }).catch(function(err){
+        res.status(400).send(err);
+    });
+   
+    
+    
+    
+//    user.save().then(function(obj){
+//        res.send(obj);
+//    }).catch(function(err){
+//       res.status(400).send(err);
+//    });
+})
 
 
 //navigation api test
@@ -153,29 +174,6 @@ app.delete('/navigation/:id', function(req, res){
     });
 });
 
-//update navigation item
-app.post('/navigation/update', function(req, res){
- console.log(req.body.id);
-    var id = req.body.id;
-    var navItem =  {
-        name: req.body.name,
-        type: req.body.type,
-        link: req.body.link,
-        visable: req.body.visable
-                };
-     if(!ObjectID.isValid(id)) {
-        return res.status(404).send("ID not valid!");
-    }
-    console.log(navItem);
-    Navigation.findOneAndUpdate({_id:id},navItem).then(function(doc){
-        if(!doc){
-            res.status(404).send("No record found for update --/navigation/update")
-        }
-        res.send(doc);
-    }).catch(function(err){
-        res.status(404).send(err);
-    })
-});
 
 //update navigation using patch
 app.patch("/navigation/:id", function(req, res){
