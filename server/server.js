@@ -8,10 +8,13 @@ const {mongoose} = require('./db/mongoose')
 var {Todo} = require('./models/todo');
 var {User} = require('./models/user');
 var {Navigation} = require('./models/navigation');
-
+var {authenticate} = require('./middleware/authenticate');
 var app = express();
 
 app.use(bodyParser.json());
+
+
+
 
 //get all todos
 app.get('/todos', function(req, resp){
@@ -101,6 +104,10 @@ app.patch('/todos/:id', function(req,res){
     });
 });
 
+
+app.get('/users/me', authenticate, function(req, res){
+res.send(req.user);
+});
 
 app.post('/users', function(req,res){
     var body = _.pick(req.body, ['email', 'password']);
