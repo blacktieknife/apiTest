@@ -2,6 +2,7 @@ var mongoose = require('mongoose');
 var validator = require('validator');
 var jwt = require('jsonwebtoken');
 var _ = require('lodash');
+var bcrypt = require('bcryptjs');
 
 var UserSchema = new mongoose.Schema({
     email:{
@@ -33,6 +34,32 @@ var UserSchema = new mongoose.Schema({
     }]
     
 },{ usePushEach: true });
+
+UserSchema.pre("save", function(next){
+        var user = this;
+        if(user.isModified('password')){
+            console.log("PSS WORD MODIFIED!")
+    bcrypt.genSalt(10, function(error,salt){
+        if(error){
+            console.log(error)
+        } else {
+         bcrypt.hash(user.password, salt, function(err, hash){
+             if(err){
+                 console.log(err);
+             } else {
+            user.password = hash;
+             next();
+             }
+       });
+        }
+      
+        
+    });
+} else {
+    next();
+}
+        
+               });
 
 UserSchema.methods.generateAuthToken = function() {
     var user = this;
