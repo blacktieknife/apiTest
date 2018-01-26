@@ -91,6 +91,43 @@ UserSchema.statics.findByToken = function(token) {
     
 };
 
+UserSchema.statics.findByCredentials = function(email,password) {
+    var User = this;
+    var decoded;
+    return User.findOne({email:email})
+        .then(function(user){
+        if(!user){
+     return new Error(`User Not Found with email ${email}`);
+        } else {
+return new Promise(function(resolve, reject){
+bcrypt.compare(password, user.password, function(err, result){
+     if(err){
+         reject(err);
+     } else {
+         if(result){
+             resolve(user);
+         } else {
+             reject(result);
+         }
+     }
+});
+          });
+        }
+    });
+    
+//    var decoded;
+//    try {
+//       decoded = jwt.verify(token, "creep");
+//
+//    } catch(err){
+//      return Promise.reject();
+//    }
+//    console.log(decoded);
+//   return User.findOne({_id:decoded._id,"tokens.token":token,"tokens.access": "auth"});
+//
+};
+
+
 UserSchema.methods.toJSON = function(){
    var user = this;
    var userObj = user.toObject();
