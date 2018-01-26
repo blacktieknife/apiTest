@@ -133,13 +133,22 @@ app.post('/users/login', function(req,res){
    // res.send(body);
     User.findByCredentials(body.email, body.password)
         .then(function(user){
-        return user.generateAuthToken().then(function(token){
+        return user.generateAuthToken()
+        .then(function(token){
           res.header('x-auth', token).send(user);
         });
     }).catch(function(error){
        res.status(400).send(error);
     });
     
+});
+
+app.delete('/users/me/token', authenticate ,function(req, res){
+    req.user.removeToken(req.token).then(function(){
+        res.status(200).send();
+    }).catch(function(error){
+       res.status(400).send(error);
+    });
 });
 
 //navigation api test

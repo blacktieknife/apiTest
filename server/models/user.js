@@ -77,6 +77,20 @@ UserSchema.methods.generateAuthToken = function() {
     });
 };
 
+UserSchema.methods.removeToken = function(token) {
+    var user = this;
+    
+   return user.update({
+        $pull:{
+            tokens:{
+                token:token
+            }
+        }
+    });
+
+};
+
+
 UserSchema.statics.findByToken = function(token) {
     var User = this;
     var decoded;
@@ -97,7 +111,7 @@ UserSchema.statics.findByCredentials = function(email,password) {
     return User.findOne({email:email})
         .then(function(user){
         if(!user){
-     return new Error(`User Not Found with email ${email}`);
+     return Promise.reject(`User Not Found with email ${email}`);
         } else {
 return new Promise(function(resolve, reject){
 bcrypt.compare(password, user.password, function(err, result){
