@@ -1,9 +1,11 @@
-const port = process.env.PORT || 3000;
+const config = require("./config/config.js");
+const port = process.env.PORT || 8000;
 const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
 const {ObjectID} = require('mongodb');
-const {mongoose} = require('./db/mongoose')
+const {mongoose} = require('./db/mongoose');
+
 
 var {Todo} = require('./models/todo');
 var {User} = require('./models/user');
@@ -17,8 +19,10 @@ app.use(bodyParser.json());
 
 
 //get all todos
-app.get('/todos', function(req, resp){
-    Todo.find().then(function(docs){
+app.get('/todos', authenticate, function(req, resp){
+    Todo.find({
+        _creator:req.user._id
+    }).then(function(docs){
         if(!docs){
          return resp.status(404).send();
         }
@@ -29,27 +33,31 @@ app.get('/todos', function(req, resp){
 });
 
 //get todo by id
-app.get("/todos/:id", function(req, resp){
+app.get("/todos/:id", authenticate, function(req, resp){
     var id = req.params.id;
     if (!ObjectID.isValid(id)){
         return resp.status(404).send();
     }
-Todo.findById(id).then(function(todo){
-    if(!todo){
-        return resp.status(404).send();
-    }
-    resp.send({todo:todo});
-    
-}).catch(function(err){
+        Todo.findOne({
+            _id:id,
+            _creator:req.user._id
+        }).then(function(todo){
+            if(!todo){
+                return resp.status(404).send();
+            }
+            resp.send({todo:todo});
+
+        }).catch(function(err){
     resp.status(400).send();
-});
+        });
 });
 
 //add new todo!
-app.post('/todos', function(req, res){
- console.log(req.body);
+app.post('/todos', authenticate ,function(req, res){
+// console.log(req.body);
     var todo =  new Todo({
-        text: req.body.text
+        text: req.body.text,
+        _creator: req.user._id
     });
     
     todo.save().then(function(doc){
@@ -60,14 +68,17 @@ app.post('/todos', function(req, res){
 });
 
 //remove todo by id
-app.delete('/todos/:id', function(req, res){
+app.delete('/todos/:id', authenticate, function(req, res){
  var id = req.params.id;
     console.log(id);
     
     if(!ObjectID.isValid(id)) {
         return res.status(404).send("ID not valid!");
     }
-  Todo.findByIdAndRemove(id).then(function(doc){
+  Todo.findOneAndRemove({
+      _id:id,
+      _creator:req.user._id
+  }).then(function(doc){
       if(!doc){
           return res.status(404).send("No record found for delete --/todos/:id")
       }
@@ -78,7 +89,7 @@ app.delete('/todos/:id', function(req, res){
 });
 
 //update todo by id
-app.patch('/todos/:id', function(req,res){
+app.patch('/todos/:id',authenticate ,function(req,res){
   var id = req.params.id;
     var body = _.pick(req.body, ['text', 'completed']);
     console.log(body);
@@ -93,7 +104,11 @@ app.patch('/todos/:id', function(req,res){
         body.completedAt = null;
     }
     
-    Todo.findByIdAndUpdate(id, body, {new:true}).then(function(doc){
+    Todo.findOneAndUpdate({
+        _id:id,
+        _creator:req.user._id
+        
+    }, body, {new:true}).then(function(doc){
         if(!doc){
             return res.status(404).send('No record found for update --/todos/:id');
         }
@@ -114,13 +129,18 @@ app.post('/users', function(req,res){
     var user = new User(body);
 
     user.save().then(function(user){
-        
+      
         return user.generateAuthToken();
   }).then(function(token){
-        res.header('x-auth', token).send(user);
+       res.header('x-auth', token);
+    return user.updateUserRole("general");
+            }).then(function(){
+        res.send(user);
     }).catch(function(err){
         res.status(400).send(err);
     });
+        
+   
 
 });
 

@@ -23,6 +23,11 @@ var Navigation = mongoose.model('Navigation', {
       type:Boolean,
        required:true,
         default: true
+    },
+    role:{
+        type:String,
+        required:true,
+        default:"general"
     }
 });
 

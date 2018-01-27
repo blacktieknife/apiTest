@@ -22,6 +22,14 @@ var UserSchema = new mongoose.Schema({
         required:true,
         minlength: 6
     },
+    roles:[{
+        role:{
+        type:String,
+        default:"general",
+        required:true
+        }
+    }],
+    
     tokens :[{
         access:{
             type:String,
@@ -63,9 +71,9 @@ UserSchema.pre("save", function(next){
 
 UserSchema.methods.generateAuthToken = function() {
     var user = this;
-   // console.log("this in generateAuthToken  = ",this);
+  
     var access = "auth";
-    var token = jwt.sign({_id:user._id.toHexString(), access:access}, 'creep').toString();
+    var token = jwt.sign({_id:user._id.toHexString(), access:access}, process.env.JWT_SECRET).toString();
     //console.log("token from the user model function ",token);
     user.tokens.push({
         access:access,
@@ -90,12 +98,23 @@ UserSchema.methods.removeToken = function(token) {
 
 };
 
+UserSchema.methods.updateUserRole = function(role) {
+    var user = this;
+    user.roles.push({
+        role:role,
+    });
+//console.log("this should be updated with tokens ",this);
+    return user.save().then(function() {
+        return role;
+    });
+};
+
 
 UserSchema.statics.findByToken = function(token) {
     var User = this;
     var decoded;
     try {
-       decoded = jwt.verify(token, "creep");
+       decoded = jwt.verify(token, process.env.JWT_SECRET);
         
     } catch(err){
       return Promise.reject();
